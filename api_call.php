@@ -11,6 +11,7 @@ $curl = curl_init();
 
 $concat = $url . $reservationId . '?token=' . $token . '&password=' . $password;
 print_r($concat);
+print('</br></br>');
 curl_setopt_array($curl, array(
   CURLOPT_URL => $concat,
   CURLOPT_RETURNTRANSFER => true,
@@ -29,12 +30,26 @@ curl_setopt_array($curl, array(
 $response = curl_exec($curl);
 $err = curl_error($curl);
 
+$jfo = null;
+$covers = null;
+
 curl_close($curl);
 
 if ($err) {
   echo "cURL Error #:" . $err;
 } else {
   echo $response;
+
+  $jfo = json_decode($response, true);
+
+  $covers = $jfo['partySize'];
+
+  print('</br></br>');
+  var_dump($jfo);
+
+print('</br></br>');
+
+print($covers);
 }
 
  ?>

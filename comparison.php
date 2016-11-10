@@ -152,7 +152,7 @@ function db_error(){
 }
 
 $rows = db_select("
-  SELECT id, date_created, api_tables_reference, venue_id
+  SELECT id, date_created, api_tables_reference, venue_id, date_booking
   FROM reservations
   WHERE id = 116897
   AND confirmed = 1
@@ -166,11 +166,13 @@ $rows = db_select("
 $tablesReservationId = null; //Need to be tested for not null **
 $DB_Date_Created = null; //Need to be tested for not null **
 $venueId = null; //Need to be tested for not null **
+$dateBooking = null;
 
 foreach ($rows as $key => $row) {
   $tablesReservationId = $row[2];
   $DB_Date_Created = $row[1];
   $venueId = $row[3];
+  $dateBooking = $rows[4];
   # code...
 }
 
@@ -182,7 +184,7 @@ if($rows === false){
 //TablesReferenceId passed from Here
 //To getTablesViaApi function
 */
-print('Tables Res ID: (' . $tablesReservationId . "). Booking Date Created: (" . $DB_Date_Created . "). Venue ID: (" . $venueId . ").");
+print('Tables Res ID: (' . $tablesReservationId . "). Booking Date Created: (" . $DB_Date_Created . "). Venue ID: (" . $venueId . "). Date Booking: (" . $dateBooking . ").");
 print('</br></br>');
 
 
