@@ -9,8 +9,10 @@ $reservationId = '314636851';
 
 $curl = curl_init();
 
+$concat = $url . $reservationId . '?token=' . $token . '&password=' . $password;
+print_r($concat);
 curl_setopt_array($curl, array(
-  CURLOPT_URL => "https://api.izone-app.com/v2/gm/reservations/314636851?token=005fa9e1-6615-467a-bebd-3c61c5eb0582&password=c0267f84-6e32-4ddc-a9f7-9ff70d969aef",
+  CURLOPT_URL => $concat,
   CURLOPT_RETURNTRANSFER => true,
   CURLOPT_ENCODING => "",
   CURLOPT_MAXREDIRS => 10,
