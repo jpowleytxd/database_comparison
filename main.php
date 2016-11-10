@@ -6,14 +6,7 @@
 //Use venue_id to collect token and passwords for api calls
 //Call Tables API passing token password and reservationId to function
 */
-  $tablesReservationId = null; //Need to be tested for not null **
-  $DB_Date_Created = null; //Need to be tested for not null **
-  $venueId = null; //Need to be tested for not null **
-
   $dateStart = '2016-11-09';
-
-  $allStarCovers = null;
-  $tablesCovers = null;
 
   $rows = databaseQuery($dateStart);
 
@@ -24,7 +17,22 @@
       $tablesReservationId = $row[2];
       $DB_Date_Created = $row[1];
       $venueId = $row[3];
+
       $allStarCovers = $row[5];
+      $tablesCovers = null;
+
+      $token = getToken($venueId);
+      $password = getPassword($venueId);
+
+      getTablesViaApi($token, $password, $tablesReservationId);
+
+      if(isset($tablesCovers)){
+        print('All Star Covers: ' . $allStarCovers);
+
+        print('Tables Covers: ' . $tablesCovers);
+        print('</br>');
+      }
+      print('</br></br></br></br></br>');
     }
   }
 
@@ -36,17 +44,12 @@
   // print('</br></br>');
 
 
-  $token = getToken($venueId);
-  $password = getPassword($venueId);
+
 
   // print("Venue ID: (" . $venueId . "). Token: (" . $token . "). Password: (" . $password . ").");
   // print('</br></br>');
 
-  getTablesViaApi($token, $password, $tablesReservationId);
 
-  print('All Star Covers: ' . $allStarCovers);
-  print('</br>');
-  print('Tables Covers: ' . $tablesCovers);
 
 /*
 //Initial function retrieving data from All Star database
@@ -66,7 +69,7 @@ function databaseQuery($dateStart){
     AND cancelled = 0
     AND is_enquiry = 0
     AND rejected = 0
-    LIMIT 1
+
   ";
 
   //Define Connection
@@ -167,7 +170,7 @@ function getTablesViaApi($token, $password, $reservationId){
   $curl = curl_init();
 
   $concat = $url . $reservationId . '?token=' . $token . '&password=' . $password;
-  //print_r($concat);
+  print_r($concat);
   curl_setopt_array($curl, array(
     CURLOPT_URL => $concat,
     CURLOPT_RETURNTRANSFER => true,
@@ -197,8 +200,15 @@ function getTablesViaApi($token, $password, $reservationId){
     //echo $response;
 
     $jfo = json_decode($response, true);
+    var_dump($jfo);
 
-    $covers = $jfo['partySize'];
+    //$covers = $jfo['partySize'];
+    if(is_numeric($jfo['partySize'])){
+      $covers = $jfo['partySize'];
+    }  else{
+      $covers = null;
+    }
+
 
     //print('</br></br>');
     //var_dump($jfo);
