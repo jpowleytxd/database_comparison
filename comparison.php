@@ -44,7 +44,6 @@ function db_select($query){
   return $rows;
 }
 
-
 $rows = db_select("
   SELECT reservations.*, reservations_activities.*
   FROM reservations
