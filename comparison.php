@@ -1,5 +1,6 @@
 <?php
 
+//Function to connect to All Star Lanes database
 function db_connect(){
   static $connection;
 
@@ -15,6 +16,7 @@ function db_connect(){
   return $connection;
 }
 
+//Function to query database passing parameters as $query
 function db_query($query){
   $connection = db_connect();
 
@@ -23,6 +25,7 @@ function db_query($query){
   return $result;
 }
 
+//Function seperating rows returned from the query
 function db_select($query){
   $rows = array();
   $result = db_query($query);
