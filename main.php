@@ -29,6 +29,7 @@ ini_set('max_execution_time', 300);
     AND cancelled = 0
     AND is_enquiry = 0
     AND rejected = 0
+
   ";
 
   //Queries Anchor database and stores within an array()
@@ -238,11 +239,37 @@ function getTablesViaApi($token, $password, $reservationId){
 */
 function reportCompilation($errorReservation){
   for($i = 0; $i < count($errorReservation); $i++){
-    var_dump($errorReservation[$i]);
-    print('</br></br>');
+    $anchorData = $errorReservation[$i];
     $i++;
-    var_dump($errorReservation[$i]);
-    print('</br></br>');
+    $tablesData = $errorReservation[$i];
+
+    $anchorId = $anchorData[0];
+    $anchorCoverCount = $anchorData[16];
+
+    $tablesId = $anchorData[41];
+    $tablesConfirmation = $tablesData['confirmation'];
+    $tablesGuest = $tablesData['guest'];
+      $tablesFirstName = $tablesGuest['firstName'];
+      $tablesLastName = $tablesGuest['lastName'];
+      $tablesEmail = $tablesGuest['email'];
+      $tablesMobilePhone = $tablesGuest['mobilePhone'];
+    $tablesPartySize = $tablesData['partySize'];
+    $tablesReservationTime = $tablesData['reservationTime'];
+    $tablesSession =  $tablesData['session'];
+
+    print("<div style='width: 100%; height: ; border: 5px solid black;'></div></br>");
+    print("Anchor ID: (" . $anchorId . "). </br>");
+    print("Anchor Covers : (<b>" . $anchorCoverCount . "</b>). </br></br>");
+
+    print("Tables ID: (" . $tablesId . "). </br>");
+    print("Tables Confirmation: (" . $tablesConfirmation . "). </br>");
+    print("First Name: (" . $tablesFirstName . "). </br>");
+    print("Last Name: (" . $tablesLastName . "). </br>");
+    print("Email: (" . $tablesEmail . "). </br>");
+    print("Mobile Phone: (" . $tablesMobilePhone . "). </br>");
+    print("Tables Covers: (<b>" . $tablesPartySize . "</b>). </br>");
+    print("Reservation Time: (" . $tablesReservationTime . "). </br>");
+    print("Session: (" . $tablesSession . "). </br></br>");
   }
 }
 
