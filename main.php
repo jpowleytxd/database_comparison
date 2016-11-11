@@ -1,4 +1,6 @@
 <?php
+
+ini_set('max_execution_time', 300);
 /*
 //Program Order:
 //Get reservation from database using reservation id
@@ -6,58 +8,8 @@
 //Use venue_id to collect token and passwords for api calls
 //Call Tables API passing token password and reservationId to function
 */
-  $dateStart = '2016-11-09';
-
-  $rows = databaseQuery($dateStart);
-
-  if($rows === false){
-    print('Failure.');
-  } else{
-    foreach ($rows as $key => $row) {
-      $tablesReservationId = $row[2];
-      $DB_Date_Created = $row[1];
-      $venueId = $row[3];
-
-      $allStarCovers = $row[5];
-      $tablesCovers = null;
-
-      $token = getToken($venueId);
-      $password = getPassword($venueId);
-
-      getTablesViaApi($token, $password, $tablesReservationId);
-
-      if(isset($tablesCovers)){
-        print('All Star Covers: ' . $allStarCovers);
-
-        print('Tables Covers: ' . $tablesCovers);
-        print('</br>');
-      }
-      print('</br></br></br></br></br>');
-    }
-  }
-
-/*
-//TablesReferenceId passed from Here
-//To getTablesViaApi function
-*/
-  // print('Tables Res ID: (' . $tablesReservationId . "). Venue ID: (" . $venueId . "). Date Start: (" . $dateStart . ").");
-  // print('</br></br>');
-
-
-
-
-  // print("Venue ID: (" . $venueId . "). Token: (" . $token . "). Password: (" . $password . ").");
-  // print('</br></br>');
-
-
-
-/*
-//Initial function retrieving data from All Star database
-//Returns rows[]
-*/
-
-function databaseQuery($dateStart){
-  $query = "
+  $dateStart = '2016-11-11';
+  $initialQuery = "
     SELECT id, date_created, api_tables_reference, venue_id, date_booking, reservations.cover_count
     FROM reservations
     INNER JOIN reservations_activities ON (reservations.id = reservation_id)
@@ -69,9 +21,78 @@ function databaseQuery($dateStart){
     AND cancelled = 0
     AND is_enquiry = 0
     AND rejected = 0
-
   ";
 
+  $rows = databaseQuery($dateStart, $initialQuery);
+
+  $errorReservation = array();
+
+  if($rows === false){
+    print('Failure.');
+  } else{
+    foreach ($rows as $key => $row) {
+      $databaseId = $row[0];
+      $tablesReservationId = $row[2];
+
+      $DB_Date_Created = $row[1];
+      $venueId = $row[3];
+
+      $allStarCovers = $row[5];
+      $tablesCovers = null;
+
+      $token = getToken($venueId);
+      $password = getPassword($venueId);
+
+      //print_r("<span style='color: blue;'>Database ID: (" . $databaseId . "). Venue ID: (" . $venueId . "). Token: (" . $token . "). Password: " . $password . "). Tables Reservation: (" . $tablesReservationId . "). </span>");
+
+      getTablesViaApi($token, $password, $tablesReservationId);
+      //print('</br>');
+
+      if(isset($tablesCovers)){
+        //print('<span style="color: red">');
+      //  print('All Star Covers: (<b>' . $allStarCovers . '</b>). ');
+
+        //print('Tables Covers: (<b>' . $tablesCovers . '</b>).');
+        //print('</span>');
+        //print('</br>');
+
+        if($tablesCovers != $allStarCovers){
+          array_push($errorReservation, $databaseId ,$tablesReservationId);
+          //print('<b>Cover Difference.</b>');
+          //print('</br>');
+        }
+      } else{
+        //print('<span style="color: green;">No Reservation Found Within Tables.</span>');
+        //print('</br>');
+      }
+      //print('</br>');
+    }
+  }
+
+  if(empty($errorReservation)) {
+    print("No Contradicting Records.");
+  } else{
+    print("Contracting Records: </br>");
+    for($i = 0; $i < count($errorReservation); $i++){
+    //  print("Anchor Booking ID: ()" . $errorReservation[0] .);
+      print("Anchor ID: (" . $errorReservation[$i] . "). Tables ID: (" . $errorReservation[$i + 1] . ").");
+
+      print("</br>");
+      $i++;
+    }
+  }
+
+/*
+//TablesReferenceId passed from Here
+//To getTablesViaApi function
+*/
+
+/*
+//Initial function retrieving data from All Star database
+//Returns rows[]
+*/
+
+function databaseQuery($dateStart, $query){
   //Define Connection
   static $connection;
 
@@ -104,7 +125,6 @@ function databaseQuery($dateStart){
       $rows[] = $row;
     }
   }
-
   return $rows;
 }
 
@@ -170,13 +190,12 @@ function getTablesViaApi($token, $password, $reservationId){
   $curl = curl_init();
 
   $concat = $url . $reservationId . '?token=' . $token . '&password=' . $password;
-  print_r($concat);
+  //print_r($concat);
   curl_setopt_array($curl, array(
     CURLOPT_URL => $concat,
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_ENCODING => "",
     CURLOPT_MAXREDIRS => 10,
-    CURLOPT_TIMEOUT => 30,
     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
     CURLOPT_CUSTOMREQUEST => "GET",
     CURLOPT_HTTPHEADER => array(
@@ -200,10 +219,10 @@ function getTablesViaApi($token, $password, $reservationId){
     //echo $response;
 
     $jfo = json_decode($response, true);
-    var_dump($jfo);
+    //var_dump($jfo);
 
     //$covers = $jfo['partySize'];
-    if(is_numeric($jfo['partySize'])){
+    if(isset($jfo['partySize'])){
       $covers = $jfo['partySize'];
     }  else{
       $covers = null;
