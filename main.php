@@ -10,7 +10,7 @@ ini_set('max_execution_time', 300);
 */
   $dateStart = '2016-11-11';
   $initialQuery = "
-    SELECT id, date_created, api_tables_reference, venue_id, date_booking, reservations.cover_count
+    SELECT *
     FROM reservations
     INNER JOIN reservations_activities ON (reservations.id = reservation_id)
     WHERE activity_id = 2
@@ -21,6 +21,7 @@ ini_set('max_execution_time', 300);
     AND cancelled = 0
     AND is_enquiry = 0
     AND rejected = 0
+    Limit 10
   ";
 
   $rows = databaseQuery($dateStart, $initialQuery);
@@ -32,12 +33,14 @@ ini_set('max_execution_time', 300);
   } else{
     foreach ($rows as $key => $row) {
       $databaseId = $row[0];
-      $tablesReservationId = $row[2];
+      $tablesReservationId = $row[41];
 
-      $DB_Date_Created = $row[1];
-      $venueId = $row[3];
+      $venueId = $row[6];
 
-      $allStarCovers = $row[5];
+      $allStarData = null;
+      $tablesData = null;
+
+      $allStarCovers = $row[16];
       $tablesCovers = null;
 
       $token = getToken($venueId);
@@ -57,7 +60,7 @@ ini_set('max_execution_time', 300);
         //print('</br>');
 
         if($tablesCovers != $allStarCovers){
-          array_push($errorReservation, $databaseId ,$tablesReservationId);
+          array_push($errorReservation, $row ,$tablesData);
           //print('<b>Cover Difference.</b>');
           //print('</br>');
         }
@@ -72,14 +75,8 @@ ini_set('max_execution_time', 300);
   if(empty($errorReservation)) {
     print("No Contradicting Records.");
   } else{
-    print("Contracting Records: </br>");
-    for($i = 0; $i < count($errorReservation); $i++){
-    //  print("Anchor Booking ID: ()" . $errorReservation[0] .);
-      print("Anchor ID: (" . $errorReservation[$i] . "). Tables ID: (" . $errorReservation[$i + 1] . ").");
-
-      print("</br>");
-      $i++;
-    }
+    //print("Contradicting Records: </br>");
+    reportCompilation($errorReservation);
   }
 
 /*
@@ -224,17 +221,23 @@ function getTablesViaApi($token, $password, $reservationId){
     //$covers = $jfo['partySize'];
     if(isset($jfo['partySize'])){
       $covers = $jfo['partySize'];
+      global $tablesData;
+      $tablesData = $jfo;
     }  else{
       $covers = null;
     }
-
 
     //print('</br></br>');
     //var_dump($jfo);
     global $tablesCovers;
 
     $tablesCovers = $covers;
+
   }
+}
+
+function reportCompilation($errorReservation){
+  print('eff');
 }
 /*
 //End Tables API query
