@@ -15,7 +15,7 @@ ini_set('max_execution_time', 300);
 //Build table at end for email confirmation with contradicting record information
 */
   //Date to be queried
-  $dateStart = '2016-11-11';
+  $dateStart = date("Y-m-d");
   //Initial query for usage in primary Anchor database query
   $initialQuery = "
     SELECT *
