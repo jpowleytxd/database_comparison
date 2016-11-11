@@ -1,14 +1,22 @@
 <?php
-
+//Required to overide PHP timeout
 ini_set('max_execution_time', 300);
 /*
 //Program Order:
-//Get reservation from database using reservation id
-//Data retrived: api_tables_reference, id, date_created, venue_id
-//Use venue_id to collect token and passwords for api calls
-//Call Tables API passing token password and reservationId to function
+//Get reservations from database using date
+//Data retrived: Anchor.reservation.*
+//Use venue_id from Anchor.reservation to collect token and passwords for
+//api calls
+//Call Tables API passing token password and api_tables_reference to function
+//Store data should it match up
+//Test cover value from both databases.
+//If match then OK
+//If contradicting then store data from both databases
+//Build table at end for email confirmation with contradicting record information
 */
+  //Date to be queried
   $dateStart = '2016-11-11';
+  //Initial query for usage in primary Anchor database query
   $initialQuery = "
     SELECT *
     FROM reservations
@@ -21,74 +29,64 @@ ini_set('max_execution_time', 300);
     AND cancelled = 0
     AND is_enquiry = 0
     AND rejected = 0
-    Limit 10
   ";
 
+  //Queries Anchor database and stores within an array()
   $rows = databaseQuery($dateStart, $initialQuery);
 
+  //Array for storage of contradicting records
   $errorReservation = array();
 
   if($rows === false){
     print('Failure.');
   } else{
     foreach ($rows as $key => $row) {
+      //Relevant IDs
       $databaseId = $row[0];
       $tablesReservationId = $row[41];
 
+      //Required for token, key combinations in API call
       $venueId = $row[6];
 
+      //Used to store data in an array for use in email compilation.
       $allStarData = null;
       $tablesData = null;
 
+      //Used to compare cover count between the different databases.
       $allStarCovers = $row[16];
       $tablesCovers = null;
 
+      //Required for API usage
       $token = getToken($venueId);
       $password = getPassword($venueId);
 
-      //print_r("<span style='color: blue;'>Database ID: (" . $databaseId . "). Venue ID: (" . $venueId . "). Token: (" . $token . "). Password: " . $password . "). Tables Reservation: (" . $tablesReservationId . "). </span>");
-
+      //Call Tables API for reservation using api_tables_reference from Anchor database
       getTablesViaApi($token, $password, $tablesReservationId);
-      //print('</br>');
 
+      //Test that $tablesCovers contains valid data
       if(isset($tablesCovers)){
-        //print('<span style="color: red">');
-      //  print('All Star Covers: (<b>' . $allStarCovers . '</b>). ');
-
-        //print('Tables Covers: (<b>' . $tablesCovers . '</b>).');
-        //print('</span>');
-        //print('</br>');
-
+        //Test both databases contain the same number of covers
         if($tablesCovers != $allStarCovers){
+          //Push contradicting table entities to array for email compilation at a later stage
           array_push($errorReservation, $row ,$tablesData);
-          //print('<b>Cover Difference.</b>');
-          //print('</br>');
         }
-      } else{
-        //print('<span style="color: green;">No Reservation Found Within Tables.</span>');
-        //print('</br>');
       }
-      //print('</br>');
     }
   }
 
-  if(empty($errorReservation)) {
+  //Decides on output if there are contradicting records
+  if((empty($errorReservation) && ($rows != false))) {
+    //No contradicting records
     print("No Contradicting Records.");
   } else{
-    //print("Contradicting Records: </br>");
+    //Contradicting records
     reportCompilation($errorReservation);
   }
-
-/*
-//TablesReferenceId passed from Here
-//To getTablesViaApi function
-*/
 
 /*
 //Initial function retrieving data from All Star database
 //Returns rows[]
 */
-
 function databaseQuery($dateStart, $query){
   //Define Connection
   static $connection;
@@ -100,6 +98,7 @@ function databaseQuery($dateStart, $query){
     $connection = mysqli_connect('localhost', $config['username'], $config['password'], $config['dbname']);
   }
 
+  //Array to store all retrieved records
   $rows = array();
   $result = null;
 
@@ -179,11 +178,7 @@ function getPassword($venueId){
 */
 function getTablesViaApi($token, $password, $reservationId){
   $url = 'https://api.izone-app.com/v2/gm/reservations/';
-  //$token ='005fa9e1-6615-467a-bebd-3c61c5eb0582';
-  //$password = 'c0267f84-6e32-4ddc-a9f7-9ff70d969aef';
-
-  //$reservationId = '314636851';
-
+  //Open API stream
   $curl = curl_init();
 
   $concat = $url . $reservationId . '?token=' . $token . '&password=' . $password;
@@ -205,9 +200,13 @@ function getTablesViaApi($token, $password, $reservationId){
   $response = curl_exec($curl);
   $err = curl_error($curl);
 
+  //Used to parse the json data
   $jfo = null;
+
+  //Required for cover comparison in main program
   $covers = null;
 
+  //Close API stream
   curl_close($curl);
 
   if ($err) {
@@ -227,19 +226,24 @@ function getTablesViaApi($token, $password, $reservationId){
       $covers = null;
     }
 
-    //print('</br></br>');
-    //var_dump($jfo);
+    //Required to detect contradicting records
     global $tablesCovers;
-
     $tablesCovers = $covers;
-
   }
 }
 
-function reportCompilation($errorReservation){
-  print('eff');
-}
 /*
-//End Tables API query
+//Builds output data for report compilation
+//Only if contradicting data has been detected
 */
+function reportCompilation($errorReservation){
+  for($i = 0; $i < count($errorReservation); $i++){
+    var_dump($errorReservation[$i]);
+    print('</br></br>');
+    $i++;
+    var_dump($errorReservation[$i]);
+    print('</br></br>');
+  }
+}
+
  ?>
