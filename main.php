@@ -15,7 +15,8 @@ ini_set('max_execution_time', 300);
 //Build table at end for email confirmation with contradicting record information
 */
   //Date to be queried
-  $dateStart = date("Y-m-d");
+  //$dateStart = date("Y-m-d");
+  $dateStart = "2016-11-19";
   //Initial query for usage in primary Anchor database query
   $initialQuery = "
     SELECT *
@@ -33,7 +34,7 @@ ini_set('max_execution_time', 300);
   ";
 
   //Queries Anchor database and stores within an array()
-  $rows = databaseQuery($dateStart, $initialQuery);
+  $rows = databaseQuery($initialQuery);
 
   //Array for storage of contradicting records
   $errorReservation = array();
@@ -78,17 +79,28 @@ ini_set('max_execution_time', 300);
   //Decides on output if there are contradicting records
   if((empty($errorReservation) && ($rows != false))) {
     //No contradicting records
-    print("No Contradicting Records.");
+    $file = fopen($dateStart . "-ErrorRecords.txt", "w");
+    $outputString = null;
+
+    $outputString = "
+    Date: (" . date("d-m-Y") . "). \r\n";
+    $outputString = $outputString . "
+    Total No. Of Bookings: (" . count($rows) . ").";
+    $outputString = $outputString ."
+    No Contradicting Records.";
+
+    echo fwrite($file, $outputString);
+    fclose($file);
   } else{
     //Contradicting records
-    reportCompilation($errorReservation);
+    reportCompilation($errorReservation, $rows);
   }
 
 /*
 //Initial function retrieving data from All Star database
 //Returns rows[]
 */
-function databaseQuery($dateStart, $query){
+function databaseQuery($query){
   //Define Connection
   static $connection;
 
@@ -234,43 +246,129 @@ function getTablesViaApi($token, $password, $reservationId){
 }
 
 /*
+//Function to get venues using ID numbers as found in above queries
+*/
+function getVenueName($venueId){
+  $query = "
+  SELECT name
+  FROM venues
+  WHERE id = " . $venueId . "";
+
+  $venueName = null;
+  $venueName = databaseQuery($query);
+
+  if(isset($venueName)){
+    return $venueName;
+  } else{
+    return null;
+  }
+}
+
+
+/*
 //Builds output data for report compilation
 //Only if contradicting data has been detected
 */
-function reportCompilation($errorReservation){
-  for($i = 0; $i < count($errorReservation); $i++){
-    $anchorData = $errorReservation[$i];
-    $i++;
-    $tablesData = $errorReservation[$i];
+function reportCompilation($errorReservation, $rows){
+  global $dateStart;
+  $file = fopen($dateStart . "-ErrorRecords.txt", "w");
 
-    $anchorId = $anchorData[0];
-    $anchorCoverCount = $anchorData[16];
+  $outputString = null;
 
-    $tablesId = $anchorData[41];
-    $tablesConfirmation = $tablesData['confirmation'];
-    $tablesGuest = $tablesData['guest'];
-      $tablesFirstName = $tablesGuest['firstName'];
-      $tablesLastName = $tablesGuest['lastName'];
-      $tablesEmail = $tablesGuest['email'];
-      $tablesMobilePhone = $tablesGuest['mobilePhone'];
-    $tablesPartySize = $tablesData['partySize'];
-    $tablesReservationTime = $tablesData['reservationTime'];
-    $tablesSession =  $tablesData['session'];
+  //print("<div style='width: 100%; height: ; border: 5px solid black;'></div></br>");
+  $outputString = "
+  Date: (" . date("d-m-y") . ").";
+  print_r("Date: (" . date("d-m-y") . ")." . "\r\n");
+  $outputString = $outputString . "
+  Total No. Of Bookings: (" . count($rows) . ").";
+  print_r("Total No. Of Bookings: (" . count($rows) . ")." . "\r\n");
+  $outputString = $outputString . "
+  Total No. Of Correct Bookings: (" . (count($rows) - (count($errorReservation) / 2)) . ").";
+  print_r("Total No. Of Correct Bookings: (" . (count($rows) - (count($errorReservation) / 2)) . ")." . "\r\n");
+  $outputString = $outputString . "
+  Total No. Of Incorrect Bookings: (" . (count($errorReservation) / 2) . ").
 
-    print("<div style='width: 100%; height: ; border: 5px solid black;'></div></br>");
-    print("Anchor ID: (" . $anchorId . "). </br>");
-    print("Anchor Covers : (<b>" . $anchorCoverCount . "</b>). </br></br>");
+  ";
+  print_r("Total No. Of Incorrect Bookings: (" . (count($errorReservation) / 2) . ")." . "\r\n");
+  print("Lines Written To File: (");
 
-    print("Tables ID: (" . $tablesId . "). </br>");
-    print("Tables Confirmation: (" . $tablesConfirmation . "). </br>");
-    print("First Name: (" . $tablesFirstName . "). </br>");
-    print("Last Name: (" . $tablesLastName . "). </br>");
-    print("Email: (" . $tablesEmail . "). </br>");
-    print("Mobile Phone: (" . $tablesMobilePhone . "). </br>");
-    print("Tables Covers: (<b>" . $tablesPartySize . "</b>). </br>");
-    print("Reservation Time: (" . $tablesReservationTime . "). </br>");
-    print("Session: (" . $tablesSession . "). </br></br>");
+  for($j = 1; $j <= 5; $j++){
+    for($i = 0; $i < count($errorReservation); $i++){
+      $anchorData = $errorReservation[$i];
+      $i++;
+      $tablesData = $errorReservation[$i];
+
+      $referenceId = $anchorData[11];
+
+      $anchorId = $anchorData[0];
+      $anchorCoverCount = $anchorData[16];
+      $anchorVenueId = (int)$anchorData[6];
+
+      $tablesId = $anchorData[41];
+      $tablesConfirmation = $tablesData['confirmation'];
+      $tablesGuest = $tablesData['guest'];
+        $tablesFirstName = $tablesGuest['firstName'];
+        $tablesLastName = $tablesGuest['lastName'];
+        $tablesEmail = $tablesGuest['email'];
+        $tablesMobilePhone = $tablesGuest['mobilePhone'];
+      $tablesPartySize = $tablesData['partySize'];
+      $tablesReservationTime = $tablesData['reservationTime'];
+      $tablesSession =  $tablesData['session'];
+
+      if($anchorVenueId == $j){
+        //print("<div style='width: 100%; height: ; border: 5px solid black;'></div></br>");
+        $outputString = $outputString . "
+
+        Venue ID : (" . $anchorVenueId . ").";
+        $venueNameLookup = getVenueName($anchorVenueId);
+        $venueName = null;
+
+        if($venueNameLookup === false){
+          //Failed to lookup venue
+        } else{
+          foreach ($venueNameLookup as $key => $row)
+            $venueName = $row[0];
+        }
+
+        //var_dump($venueName);
+        $outputString = $outputString . "
+        Venue Name: (" . $venueName . ").
+        ";
+
+        $outputString = $outputString . "
+            Reference Id: (" . $referenceId . ").";
+        $outputString = $outputString . "
+            Anchor Covers : (" . $anchorCoverCount . ").
+        ";
+
+        $outputString = $outputString . "
+            Tables ID: (" . $tablesId . ").";
+        $outputString = $outputString . "
+            Tables Confirmation: (" . $tablesConfirmation . ").";
+        $outputString = $outputString . "
+            First Name: (" . $tablesFirstName . ").";
+        $outputString = $outputString . "
+            Last Name: (" . $tablesLastName . ").";
+        $outputString = $outputString . "
+            Email: (" . $tablesEmail . ").";
+        $outputString = $outputString . "
+            Tables Covers: (" . $tablesPartySize . ").";
+        $outputString = $outputString . "
+            Reservation Time: (" . $tablesReservationTime . ").";
+        $outputString = $outputString . "
+            Session: (" . $tablesSession . ").
+        ";
+
+        $outputString = $outputString . "
+            Link To Booking: (http://anchor.txdlimited.co.uk/index.php/bookings/" . $anchorId . ").
+        ";
+      }
+    }
   }
+
+  echo fwrite($file, $outputString);
+  fclose($file);
+  print_r(").\r\n");
 }
 
  ?>
